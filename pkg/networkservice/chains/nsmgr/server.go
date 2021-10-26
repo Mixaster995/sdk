@@ -75,13 +75,14 @@ type nsmgrServer struct {
 }
 
 type serverOptions struct {
-	authorizeServer networkservice.NetworkServiceServer
-	dialOptions     []grpc.DialOption
-	dialTimeout     time.Duration
-	regURL          *url.URL
-	regDialOptions  []grpc.DialOption
-	name            string
-	url             string
+	authorizeServer          networkservice.NetworkServiceServer
+	dialOptions              []grpc.DialOption
+	dialTimeout              time.Duration
+	regURL                   *url.URL
+	regDialOptions           []grpc.DialOption
+	name                     string
+	url                      string
+	exludePrefixesConfigPath string
 }
 
 // Option modifies server option value
@@ -131,6 +132,14 @@ func WithName(name string) Option {
 func WithURL(u string) Option {
 	return func(o *serverOptions) {
 		o.url = u
+	}
+}
+
+// WithExcludePrefixesConfig - set a path to exclude prefixes config map, it is used to
+// todo finish documentation what it is used for
+func WithExcludePrefixesConfig(confPath string) Option {
+	return func(o *serverOptions) {
+		o.exludePrefixesConfigPath = confPath
 	}
 }
 
@@ -195,7 +204,7 @@ func NewServer(ctx context.Context, tokenGenerator token.GeneratorFunc, options 
 			adapters.NewClientToServer(clientinfo.NewClient()),
 			discover.NewServer(nsClient, nseClient),
 			roundrobin.NewServer(),
-			excludedprefixes.NewServer(ctx),
+			excludedprefixes.NewServer(ctx, excludedprefixes.WithConfigPath(opts.exludePrefixesConfigPath)),
 			recvfd.NewServer(), // Receive any files passed
 			interpose.NewServer(&interposeRegistryServer),
 			filtermechanisms.NewServer(&urlsRegistryServer),
